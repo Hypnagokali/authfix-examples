@@ -6,7 +6,7 @@ Setup a session based login and use the Api:
 ```sh
 curl http://localhost:7080/public -i
 ```
-The public route is of course accessible.
+Of course the public route is accessible.
 
 Lets try the secured one:
 ```sh
