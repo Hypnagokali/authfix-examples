@@ -8,7 +8,8 @@ members = ["simple_session"]
 # edition = "2021"
 
 [workspace.dependencies]
-authfix = { path = "authfix", features = ["google_auth"]}
+authfix = { path = "authfix", features = ["authenticator"]}
 actix-web="4.10.2"
+env_logger = "0.11"
 serde = { version = "1.0.215", features = ["derive"]}
 # actix-session = { version = "0.10.1", features = ["cookie-session"]}

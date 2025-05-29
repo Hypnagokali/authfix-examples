@@ -1,5 +1,5 @@
-use actix_web::{get, HttpResponse, HttpServer, Responder};
-use authfix::{async_trait::async_trait, config::Routes, login::{LoadUserByCredentials, LoadUserError, LoginToken}, session::app_builder::SessionLoginAppBuilder, AuthToken};
+use actix_web::{cookie::Key, get, middleware::Logger, HttpResponse, HttpServer, Responder};
+use authfix::{async_trait::async_trait, config::Routes, login::{LoadUserByCredentials, LoadUserError, LoginToken}, session::app_builder::SessionLoginAppBuilder, AccountInfo, AuthToken};
 use serde::{Deserialize, Serialize};
 
 
@@ -9,8 +9,12 @@ struct User {
     name: String
 }
 
+impl AccountInfo for User {}
+
+
 // Struct that handles the authentication
 struct AuthenticationService;
+
 
 // LoadUsersByCredentials uses async_trait, so its needed when implementing the trait for AuthenticationService
 // async_trait is re-exported by authfix.
@@ -40,19 +44,22 @@ async fn secured(auth_token: AuthToken<User>) -> impl Responder {
 
 #[get("/public")]
 async fn public() -> impl Responder {
-    HttpResponse::Ok().json(r#"{ value: "public value" }"#)
+    HttpResponse::Ok().json(r#"{ value: "everyone can see this" }"#)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    let key = Key::generate();
     HttpServer::new(move || {
         // SessionLoginAppBuilder is the simplest way to create an App instance configured with session based authentication
-        SessionLoginAppBuilder::default(AuthenticationService)
+        SessionLoginAppBuilder::create(AuthenticationService, key.clone())
         // configure path names for the login handler and define paths that are not secured.
         // Routes::default() registers: /login, /login/mfa, /logout
-        .set_routes_and_unsecured_paths(Routes::default(), vec!["/public"])
+        .set_login_routes_and_unsecured_paths(Routes::default(), vec!["/public"])
         // create App instance with build()
         .build()
+        .wrap(Logger::default())
         .service(secured)
         .service(public)
     })
