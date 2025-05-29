@@ -1,3 +1,4 @@
 [submodule "authfix"]
 	path = authfix
 	url = https://github.com/Hypnagokali/authfix
+	branch = main
