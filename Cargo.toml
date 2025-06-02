@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["simple_session"]
+members = [ "session_config","simple_session"]
 
 # [package]
 # name = "authfix-examples"
@@ -9,7 +9,6 @@ members = ["simple_session"]
 
 [workspace.dependencies]
 authfix = { path = "authfix", features = ["authenticator"]}
-actix-web="4.10.2"
+actix-web="4.10"
 env_logger = "0.11"
-serde = { version = "1.0.215", features = ["derive"]}
-# actix-session = { version = "0.10.1", features = ["cookie-session"]}
+serde = { version = "1.0", features = ["derive"]}

@@ -1,6 +1,8 @@
+use actix_session::{config::{PersistentSession, SessionLifecycle}, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, get, middleware::Logger, HttpResponse, HttpServer, Responder};
 use authfix::{async_trait::async_trait, config::Routes, login::{LoadUserByCredentials, LoadUserError, LoginToken}, session::app_builder::SessionLoginAppBuilder, AccountInfo, AuthToken};
 use serde::{Deserialize, Serialize};
+
 
 // A user handled by this library needs to implement Clone, Serialize, Deserialize
 #[derive(Clone, Serialize, Deserialize)]
@@ -39,18 +41,24 @@ async fn secured(auth_token: AuthToken<User>) -> impl Responder {
     HttpResponse::Ok().json(user)
 }
 
-#[get("/public")]
-async fn public() -> impl Responder {
-    HttpResponse::Ok().json(r#"{ value: "everyone can see this" }"#)
+pub fn session_config (key: Key) -> SessionMiddleware<CookieSessionStore> {
+    let persistent_session = PersistentSession::default();
+    let lc = SessionLifecycle::PersistentSession(persistent_session);
+    SessionMiddleware::builder(CookieSessionStore::default(), key)
+                .cookie_name("sessionId".to_string())
+                .cookie_http_only(true)
+                .cookie_same_site(actix_web::cookie::SameSite::Lax)
+                .cookie_secure(false)
+                .session_lifecycle(lc)
+                .build()
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let key = Key::generate();
     HttpServer::new(move || {
         // SessionLoginAppBuilder is the simplest way to create an App instance configured with session based authentication
-        SessionLoginAppBuilder::create(AuthenticationService, key.clone())
+        SessionLoginAppBuilder::create_with_session_middleware(AuthenticationService, session_config(key.clone()))
         // configure path names for the login handler and define paths that are not secured.
         // Routes::default() registers: /login, /login/mfa, /logout
         .set_login_routes_and_public_paths(Routes::default(), vec!["/public"])
@@ -58,7 +66,6 @@ async fn main() -> std::io::Result<()> {
         .build()
         .wrap(Logger::default())
         .service(secured)
-        .service(public)
     })
     .bind("127.0.0.1:7080")?
     .run()

@@ -1,0 +1,10 @@
+[package]
+name = "session_config"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+authfix.workspace = true
+actix-web.workspace = true
+serde.workspace = true
+actix-session = { version = "0.10", features = ["cookie-session"]}

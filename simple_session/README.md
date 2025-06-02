@@ -1,7 +1,6 @@
 # Authfix example: simple session
->Start the app and test it with curl
 
-## With default configuration
+## Example
 Setup a session based login and use the Api:
 ```sh
 curl http://localhost:7080/public -i

@@ -2933,6 +2933,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "session_config"
+version = "0.1.0"
+dependencies = [
+ "actix-session",
+ "actix-web",
+ "authfix",
+ "serde",
+]
+
+[[package]]
 name = "sha1"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
