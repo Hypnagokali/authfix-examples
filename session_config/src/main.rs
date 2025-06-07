@@ -1,13 +1,22 @@
-use actix_session::{config::{PersistentSession, SessionLifecycle}, storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, get, middleware::Logger, HttpResponse, HttpServer, Responder};
-use authfix::{async_trait::async_trait, config::Routes, login::{LoadUserByCredentials, LoadUserError, LoginToken}, session::app_builder::SessionLoginAppBuilder, AccountInfo, AuthToken};
+use actix_session::{
+    SessionMiddleware,
+    config::{PersistentSession, SessionLifecycle},
+    storage::CookieSessionStore,
+};
+use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get, middleware::Logger};
+use authfix::{
+    AccountInfo, AuthToken,
+    async_trait::async_trait,
+    config::Routes,
+    login::{LoadUserByCredentials, LoadUserError, LoginToken},
+    session::app_builder::SessionLoginAppBuilder,
+};
 use serde::{Deserialize, Serialize};
-
 
 // A user handled by this library needs to implement Clone, Serialize, Deserialize
 #[derive(Clone, Serialize, Deserialize)]
 struct User {
-    name: String
+    name: String,
 }
 
 impl AccountInfo for User {}
@@ -26,7 +35,7 @@ impl LoadUserByCredentials for AuthenticationService {
         // currently authfix does not provide hashing functions, you can use for example https://docs.rs/argon2/latest/argon2/
         if login_token.email == "test@example.org" && login_token.password == "password" {
             Ok(User {
-                name: "Johnny".to_owned()
+                name: "Johnny".to_owned(),
             })
         } else {
             Err(LoadUserError::LoginFailed)
@@ -34,23 +43,23 @@ impl LoadUserByCredentials for AuthenticationService {
     }
 }
 
-// You have access to the user via the AuthToken extractor in secured routes. 
+// You have access to the user via the AuthToken extractor in secured routes.
 #[get("/secured")]
 async fn secured(auth_token: AuthToken<User>) -> impl Responder {
-    let user = auth_token.get_authenticated_user().clone();
-    HttpResponse::Ok().json(user)
+    let user = auth_token.get_authenticated_user();
+    HttpResponse::Ok().json(&*user)
 }
 
-pub fn session_config (key: Key) -> SessionMiddleware<CookieSessionStore> {
+pub fn session_config(key: Key) -> SessionMiddleware<CookieSessionStore> {
     let persistent_session = PersistentSession::default();
     let lc = SessionLifecycle::PersistentSession(persistent_session);
     SessionMiddleware::builder(CookieSessionStore::default(), key)
-                .cookie_name("sessionId".to_string())
-                .cookie_http_only(true)
-                .cookie_same_site(actix_web::cookie::SameSite::Lax)
-                .cookie_secure(false)
-                .session_lifecycle(lc)
-                .build()
+        .cookie_name("sessionId".to_string())
+        .cookie_http_only(true)
+        .cookie_same_site(actix_web::cookie::SameSite::Lax)
+        .cookie_secure(false)
+        .session_lifecycle(lc)
+        .build()
 }
 
 #[actix_web::main]
@@ -58,7 +67,10 @@ async fn main() -> std::io::Result<()> {
     let key = Key::generate();
     HttpServer::new(move || {
         // SessionLoginAppBuilder is the simplest way to create an App instance configured with session based authentication
-        SessionLoginAppBuilder::create_with_session_middleware(AuthenticationService, session_config(key.clone()))
+        SessionLoginAppBuilder::create_with_session_middleware(
+            AuthenticationService,
+            session_config(key.clone()),
+        )
         // configure path names for the login handler and define paths that are not secured.
         // Routes::default() registers: /login, /login/mfa, /logout
         .set_login_routes_and_public_paths(Routes::default(), vec!["/public"])
