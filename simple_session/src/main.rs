@@ -55,6 +55,8 @@ async fn public() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // In production, you should read the key from an external source so that you can use sessions across restarts
+    // see: https://docs.rs/actix-session/0.10.1/actix_session/
     let key = Key::generate();
     HttpServer::new(move || {
         // SessionLoginAppBuilder is the simplest way to create an App instance configured with session based authentication

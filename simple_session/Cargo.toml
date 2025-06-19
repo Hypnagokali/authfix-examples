@@ -7,4 +7,3 @@ edition = "2024"
 authfix.workspace = true
 actix-web.workspace = true
 serde.workspace = true
-env_logger.workspace = true
