@@ -7,3 +7,4 @@ edition = "2024"
 actix-web.workspace=true
 authfix.workspace=true
 serde.workspace=true
+google-authenticator = "0.4"

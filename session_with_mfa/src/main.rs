@@ -2,9 +2,12 @@ use std::sync::Arc;
 
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get};
 use authfix::{
-    async_trait::async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, mfa::{HandleMfaRequest, MfaConfig, MfaError}, multifactor::{authenticator::{AuthenticatorFactor, MFA_ID_AUTHENTICATOR_TOTP}, GetTotpSecretError, TotpSecretRepository}, session::app_builder::SessionLoginAppBuilder, AccountInfo, AuthToken
+    async_trait::async_trait, config::Routes, login::{LoadUserByCredentials, LoadUserError, LoginToken}, mfa::{HandleMfaRequest, MfaConfig, MfaError}, multifactor::{authenticator::{AuthenticatorFactor, MFA_ID_AUTHENTICATOR_TOTP}, GetTotpSecretError, TotpSecretRepository}, session::app_builder::SessionLoginAppBuilder, AccountInfo, AuthToken
 };
+use google_authenticator::GoogleAuthenticator;
 use serde::{Deserialize, Serialize};
+
+const SECRET: &str = "I3VFM3JKMNDJCDH5BMBEEQAW6KJ6NOE3";
 
 // This is our user
 #[derive(Clone, Serialize, Deserialize)]
@@ -22,7 +25,7 @@ struct StaticTotpSecretRepo;
 impl TotpSecretRepository<User> for StaticTotpSecretRepo {
     async fn get_auth_secret(&self, _user: &User) -> Result<String, GetTotpSecretError> {
         // here you would get the secret from the user
-        Ok("I3VFM3JKMNDJCDH5BMBEEQAW6KJ6NOE3".to_owned())
+        Ok(SECRET.to_owned())
     }
 }
 
@@ -81,15 +84,25 @@ async fn secured(auth_token: AuthToken<User>) -> impl Responder {
     HttpResponse::Ok().json(&*user)
 }
 
+#[get("/code")]
+async fn code() -> impl Responder {
+    let auth = GoogleAuthenticator::new();
+    let code = auth.get_code(SECRET, 0).unwrap();
+
+    HttpResponse::Ok().body(code)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let key = Key::generate();
     HttpServer::new(move || {
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
+            .set_login_routes_and_public_paths(Routes::default(), vec!["/code"])
             // Arc is used, because the TotpSecret repo might be a shared service
             .set_mfa(MfaConfig::new(vec![Box::new(AuthenticatorFactor::new(Arc::new(StaticTotpSecretRepo)))], MfaHandler))
             .build()
             .service(secured)
+            .service(code)
     })
     .bind("127.0.0.1:7080")?
     .run()
