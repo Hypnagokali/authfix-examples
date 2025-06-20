@@ -25,8 +25,8 @@ curl -c cookies.txt -b cookies.txt -X POST -i http://localhost:7080/login/mfa \
     -i
 ```
 
-We should be now logged in
+We are now logged in
 ```sh
-curl -c cookies.txt -b cookies.txt http://localhost:7080/secured -i
+curl -b cookies.txt http://localhost:7080/secured -i
 ```
 
