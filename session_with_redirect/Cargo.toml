@@ -1,0 +1,10 @@
+[package]
+name = "session_with_redirect"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web.workspace = true
+serde.workspace = true
+authfix.workspace = true
+maud = { version = "0.27.0", features = ["actix-web"]}

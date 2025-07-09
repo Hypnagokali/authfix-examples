@@ -5,11 +5,10 @@ use actix_session::{
 };
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get, middleware::Logger};
 use authfix::{
-    AccountInfo, AuthToken,
+    AuthToken,
     async_trait::async_trait,
-    config::Routes,
     login::{LoadUserByCredentials, LoadUserError, LoginToken},
-    session::app_builder::SessionLoginAppBuilder,
+    session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
 };
 use serde::{Deserialize, Serialize};
 

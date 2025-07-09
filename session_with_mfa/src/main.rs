@@ -2,7 +2,15 @@ use std::sync::Arc;
 
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get};
 use authfix::{
-    async_trait::async_trait, config::Routes, login::{LoadUserByCredentials, LoadUserError, LoginToken}, mfa::{HandleMfaRequest, MfaConfig, MfaError}, multifactor::{authenticator::{AuthenticatorFactor, MFA_ID_AUTHENTICATOR_TOTP}, GetTotpSecretError, TotpSecretRepository}, session::app_builder::SessionLoginAppBuilder, AccountInfo, AuthToken
+    AuthToken,
+    async_trait::async_trait,
+    login::{LoadUserByCredentials, LoadUserError, LoginToken},
+    mfa::{HandleMfaRequest, MfaConfig, MfaError},
+    multifactor::{
+        GetTotpSecretError, TotpSecretRepository,
+        authenticator::{AuthenticatorFactor, MFA_ID_AUTHENTICATOR_TOTP},
+    },
+    session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
 };
 use google_authenticator::GoogleAuthenticator;
 use serde::{Deserialize, Serialize};
@@ -99,7 +107,12 @@ async fn main() -> std::io::Result<()> {
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
             .set_login_routes_and_public_paths(Routes::default(), vec!["/code"])
             // Arc is used, because the TotpSecret repo might be a shared service
-            .set_mfa(MfaConfig::new(vec![Box::new(AuthenticatorFactor::new(Arc::new(StaticTotpSecretRepo)))], MfaHandler))
+            .set_mfa(MfaConfig::new(
+                vec![Box::new(AuthenticatorFactor::new(Arc::new(
+                    StaticTotpSecretRepo,
+                )))],
+                MfaHandler,
+            ))
             .build()
             .service(secured)
             .service(code)
