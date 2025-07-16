@@ -5,8 +5,7 @@ use actix_session::{
 };
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get, middleware::Logger};
 use authfix::{
-    AuthToken,
-    async_trait::async_trait,
+    AuthToken, async_trait,
     login::{LoadUserByCredentials, LoadUserError, LoginToken},
     session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
 };

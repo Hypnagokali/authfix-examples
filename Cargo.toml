@@ -3,6 +3,6 @@ resolver = "3"
 members = [ "session_config", "session_with_mfa", "session_with_redirect", "simple_session"]
 
 [workspace.dependencies]
-authfix = { path = "authfix", features = ["authenticator"]}
+authfix = { path = "authfix", features = ["authenticator", "mfa_send_code"]}
 actix-web = "4.10"
 serde = { version = "1.0", features = ["derive"]}
