@@ -11,8 +11,8 @@ use authfix::{
 };
 use serde::{Deserialize, Serialize};
 
-// A user handled by this library needs to implement Clone, Serialize, Deserialize
-#[derive(Clone, Serialize, Deserialize)]
+// A user intended for session authentication must derive or implement Serialize, and Deserialize.
+#[derive(Serialize, Deserialize)]
 struct User {
     name: String,
 }
@@ -68,9 +68,6 @@ async fn main() -> std::io::Result<()> {
             AuthenticationService,
             session_config(key.clone()),
         )
-        // configure path names for the login handler and define paths that are not secured.
-        // Routes::default() registers: /login, /login/mfa, /logout
-        .set_login_routes_and_public_paths(Routes::default(), vec!["/public"])
         // create App instance with build()
         .build()
         .wrap(Logger::default())

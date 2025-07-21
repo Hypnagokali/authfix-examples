@@ -9,12 +9,11 @@ use serde::{Deserialize, Serialize};
 
 const SECRET: &str = "I3VFM3JKMNDJCDH5BMBEEQAW6KJ6NOE3";
 
-// This is our user
-#[derive(Clone, Serialize, Deserialize)]
+// A user intended for session authentication must derive or implement Serialize, and Deserialize.
+#[derive(Serialize, Deserialize)]
 struct User {
     name: String,
 }
-
 // AccountInfo for user with default implementation
 impl AccountInfo for User {}
 
