@@ -13,8 +13,7 @@ use chrono::{DateTime, Local};
 use maud::html;
 use serde::{Deserialize, Serialize};
 
-// A user intended for session authentication must derive or implement Clone, Serialize, and Deserialize.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct User {
     name: String,
 }
