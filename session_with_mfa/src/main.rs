@@ -2,15 +2,7 @@ use std::sync::Arc;
 
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get};
 use authfix::{
-    AuthToken,
-    async_trait::async_trait,
-    login::{LoadUserByCredentials, LoadUserError, LoginToken},
-    mfa::{HandleMfaRequest, MfaConfig, MfaError},
-    multifactor::{
-        GetTotpSecretError, TotpSecretRepository,
-        authenticator::{AuthenticatorFactor, MFA_ID_AUTHENTICATOR_TOTP},
-    },
-    session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
+    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::{config::{HandleMfaRequest, MfaConfig, MfaError}, factor_impl::authenticator::{AuthenticatorFactor, GetTotpSecretError, TotpSecretRepository}}, session::{app_builder::SessionLoginAppBuilder, config::Routes, AccountInfo}, AuthToken
 };
 use google_authenticator::GoogleAuthenticator;
 use serde::{Deserialize, Serialize};
@@ -29,9 +21,10 @@ impl AccountInfo for User {}
 // The TotpSecretRepository is for loading the secret
 struct StaticTotpSecretRepo;
 
-#[async_trait]
-impl TotpSecretRepository<User> for StaticTotpSecretRepo {
-    async fn get_auth_secret(&self, _user: &User) -> Result<String, GetTotpSecretError> {
+impl TotpSecretRepository for StaticTotpSecretRepo {
+    type User = User;
+    
+    async fn auth_secret(&self, _user: &User) -> Result<String, GetTotpSecretError> {
         // here you would get the secret from the user
         Ok(SECRET.to_owned())
     }
@@ -45,10 +38,10 @@ struct MfaHandler;
 impl HandleMfaRequest for MfaHandler {
     type User = User;
 
-    async fn get_mfa_id_by_user(&self, _user: &Self::User) -> Result<Option<String>, MfaError> {
+    async fn mfa_id_by_user(&self, _user: &Self::User) -> Result<Option<String>, MfaError> {
         // To decide which challenge should be used, you have to implement this method
         // if it returns None, the user needs no mfa check
-        Ok(Some(MFA_ID_AUTHENTICATOR_TOTP.to_owned()))
+        Ok(Some(AuthenticatorFactor::id().to_owned()))
     }
 
     // By default, every login needs a mfa challenge, but you can override this behaviour by implementing is_condition_met:
@@ -67,7 +60,6 @@ struct AuthenticationService;
 
 // LoadUsersByCredentials uses async_trait, so its needed when implementing the trait for AuthenticationService
 // async_trait is re-exported by authfix.
-#[async_trait]
 impl LoadUserByCredentials for AuthenticationService {
     type User = User;
 
@@ -87,7 +79,7 @@ impl LoadUserByCredentials for AuthenticationService {
 // You have access to the user via the AuthToken extractor in secured routes.
 #[get("/secured")]
 async fn secured(auth_token: AuthToken<User>) -> impl Responder {
-    let user = auth_token.get_authenticated_user();
+    let user = auth_token.authenticated_user();
 
     HttpResponse::Ok().json(&*user)
 }
@@ -106,7 +98,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
             .set_login_routes_and_public_paths(Routes::default(), vec!["/code"])
-            // Arc is used, because the TotpSecret repo might be a shared service
+            // Arc is used, because the TotpSecret repo is likely to be a shared service, because you have to save the secret first.
             .set_mfa(MfaConfig::new(
                 vec![Box::new(AuthenticatorFactor::new(Arc::new(
                     StaticTotpSecretRepo,

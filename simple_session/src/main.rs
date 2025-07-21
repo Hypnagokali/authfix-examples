@@ -1,7 +1,6 @@
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get};
 use authfix::{
     AuthToken,
-    async_trait::async_trait,
     login::{LoadUserByCredentials, LoadUserError, LoginToken},
     session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
 };
@@ -20,9 +19,7 @@ impl AccountInfo for User {}
 // Struct that handles the authentication
 struct AuthenticationService;
 
-// LoadUsersByCredentials uses async_trait, so its needed when implementing the trait for AuthenticationService
-// async_trait is re-exported by authfix.
-#[async_trait]
+// Authfix need this trait to be implemented, to fetch the user by credentials.
 impl LoadUserByCredentials for AuthenticationService {
     type User = User;
 
@@ -42,7 +39,7 @@ impl LoadUserByCredentials for AuthenticationService {
 // You have access to the user via the AuthToken extractor in secured routes.
 #[get("/secured")]
 async fn secured(auth_token: AuthToken<User>) -> impl Responder {
-    let user = auth_token.get_authenticated_user();
+    let user = auth_token.authenticated_user();
 
     HttpResponse::Ok().json(&*user)
 }

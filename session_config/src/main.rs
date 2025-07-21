@@ -5,7 +5,7 @@ use actix_session::{
 };
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get, middleware::Logger};
 use authfix::{
-    AuthToken, async_trait,
+    AuthToken,
     login::{LoadUserByCredentials, LoadUserError, LoginToken},
     session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
 };
@@ -24,7 +24,6 @@ struct AuthenticationService;
 
 // LoadUsersByCredentials uses async_trait, so its needed when implementing the trait for AuthenticationService
 // async_trait is re-exported by authfix.
-#[async_trait]
 impl LoadUserByCredentials for AuthenticationService {
     type User = User;
 
@@ -44,7 +43,7 @@ impl LoadUserByCredentials for AuthenticationService {
 // You have access to the user via the AuthToken extractor in secured routes.
 #[get("/secured")]
 async fn secured(auth_token: AuthToken<User>) -> impl Responder {
-    let user = auth_token.get_authenticated_user();
+    let user = auth_token.authenticated_user();
     HttpResponse::Ok().json(&*user)
 }
 
@@ -54,7 +53,7 @@ pub fn session_config(key: Key) -> SessionMiddleware<CookieSessionStore> {
     SessionMiddleware::builder(CookieSessionStore::default(), key)
         .cookie_name("sessionId".to_string())
         .cookie_http_only(true)
-        .cookie_same_site(actix_web::cookie::SameSite::Lax)
+        .cookie_same_site(actix_web::cookie::SameSite::Strict)
         .cookie_secure(false)
         .session_lifecycle(lc)
         .build()
