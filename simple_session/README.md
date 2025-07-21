@@ -11,7 +11,7 @@ Lets try the secured one:
 ```sh
 curl http://localhost:7080/secured -i
 ```
-Oh no, 401! You need to login 🤔
+Oh no, 401! You need to log in 🤔
 
 ```sh
 curl -c cookies.txt -X POST http://localhost:7080/login \

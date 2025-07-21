@@ -5,13 +5,9 @@ use std::{
 
 use actix_web::{HttpServer, Responder, cookie::Key, get, web::Query};
 use authfix::{
-    AuthToken, async_trait,
-    login::{LoadUserByCredentials, LoadUserError, LoginToken},
-    mfa::{HandleMfaRequest, MfaConfig, MfaError},
-    multifactor::random_code_auth::{CodeSendError, CodeSender, MfaRandomCode, RandomCode},
-    session::{
-        AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes, handlers::LoginError,
-    },
+    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::{config::{HandleMfaRequest, MfaConfig, MfaError}, factor_impl::random_code_auth::{CodeSendError, CodeSender, MfaRandomCodeFactor, RandomCode}}, session::{
+        app_builder::SessionLoginAppBuilder, config::Routes, handlers::LoginError, AccountInfo
+    }, AuthToken
 };
 use chrono::{DateTime, Local};
 use maud::html;
@@ -28,9 +24,6 @@ impl AccountInfo for User {}
 // Struct that handles the authentication
 struct AuthenticationService;
 
-// LoadUsersByCredentials uses async_trait, so its needed when implementing the trait for AuthenticationService
-// async_trait is re-exported by authfix.
-#[async_trait]
 impl LoadUserByCredentials for AuthenticationService {
     type User = User;
 
@@ -51,7 +44,6 @@ impl LoadUserByCredentials for AuthenticationService {
 struct DummySender;
 
 // To do so, it has to implement the CodeSender trait.
-#[async_trait]
 impl CodeSender for DummySender {
     async fn send_code(&self, random_code: RandomCode) -> Result<(), CodeSendError> {
         // send the code to the user
@@ -73,8 +65,8 @@ struct RandomCodeProvider;
 impl HandleMfaRequest for RandomCodeProvider {
     type User = User;
 
-    async fn get_mfa_id_by_user(&self, _: &Self::User) -> Result<Option<String>, MfaError> {
-        Ok(Some(MfaRandomCode::id()))
+    async fn mfa_id_by_user(&self, _: &Self::User) -> Result<Option<String>, MfaError> {
+        Ok(Some(MfaRandomCodeFactor::id()))
     }
 }
 
@@ -155,7 +147,7 @@ async fn secured(token: AuthToken<User>) -> impl Responder {
         html {
             body {
                 h1 { "Private page!" }
-                p { "User: " (token.get_authenticated_user().name) }
+                p { "User: " (token.authenticated_user().name) }
                 a href="/logout" {
                     "I want to logout"
                 }
@@ -185,7 +177,7 @@ async fn main() -> std::io::Result<()> {
     let code_sender = Arc::new(DummySender);
 
     HttpServer::new(move || {
-        let code_factor = Box::new(MfaRandomCode::new(
+        let code_factor = Box::new(MfaRandomCodeFactor::new(
             || {
                 RandomCode::new(
                     "123",

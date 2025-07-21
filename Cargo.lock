@@ -489,6 +489,7 @@ dependencies = [
  "futures",
  "google-authenticator",
  "image 0.25.6",
+ "lazy_static",
  "log",
  "qrcode-generator",
  "rand 0.9.1",
