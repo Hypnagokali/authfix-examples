@@ -2,7 +2,12 @@ use std::sync::Arc;
 
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get};
 use authfix::{
-    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::{config::{HandleMfaRequest, MfaConfig, MfaError}, factor_impl::authenticator::{AuthenticatorFactor, GetTotpSecretError, TotpSecretRepository}}, session::{app_builder::SessionLoginAppBuilder, config::Routes, AccountInfo}, AuthToken
+    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::{
+        config::{HandleMfaRequest, MfaConfig, MfaError},
+        factor_impl::authenticator::{
+            AuthenticatorFactor, GetTotpSecretError, TotpSecretRepository
+        },
+    }, session::{app_builder::SessionLoginAppBuilder, config::Routes, AccountInfo}, AuthToken
 };
 use google_authenticator::GoogleAuthenticator;
 use serde::{Deserialize, Serialize};
@@ -22,7 +27,7 @@ struct StaticTotpSecretRepo;
 
 impl TotpSecretRepository for StaticTotpSecretRepo {
     type User = User;
-    
+
     async fn auth_secret(&self, _user: &User) -> Result<String, GetTotpSecretError> {
         // here you would get the secret from the user
         Ok(SECRET.to_owned())
@@ -43,13 +48,19 @@ impl HandleMfaRequest for MfaHandler {
         Ok(Some(AuthenticatorFactor::id().to_owned()))
     }
 
-    // By default, every login needs a mfa challenge, but you can override this behaviour by implementing is_condition_met:
+    // There are two more methods that could be implemented:
+    
+    // Checks if this login request should trigger a mfa challenge. 
     // async fn is_condition_met(&self, user: &Self::User, req: HttpRequest) -> bool {
     //     true
     // }
 
-    // If you want to mutate the response after success (e.g. setting a cookie) you may implement handle_success:
-    // async fn handle_success(&self, user: &Self::User, mut res: HttpResponse) -> HttpResponse {
+    // Use this method to set a cookie, for example.
+    // async fn handle_success(
+    //     &self,
+    //     user: &Self::User,
+    //     mut res: HttpResponseBuilder,
+    // ) -> HttpResponseBuilder {
     //     res
     // }
 }
@@ -83,6 +94,8 @@ async fn secured(auth_token: AuthToken<User>) -> impl Responder {
     HttpResponse::Ok().json(&*user)
 }
 
+// This is just a helper handler to retrieve a valid code for the login process.
+// You can ignore it.
 #[get("/code")]
 async fn code() -> impl Responder {
     let auth = GoogleAuthenticator::new();
@@ -94,14 +107,15 @@ async fn code() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let key = Key::generate();
+    
+    // Create an instance of a TotpSecretRepository.
+    let totp_repo = Arc::new(StaticTotpSecretRepo);
     HttpServer::new(move || {
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
             .set_login_routes_and_public_paths(Routes::default(), vec!["/code"])
-            // Arc is used, because the TotpSecret repo is likely to be a shared service, because you have to save the secret first.
+            // create the AuthenticatorFactor configuration
             .set_mfa(MfaConfig::new(
-                vec![Box::new(AuthenticatorFactor::new(Arc::new(
-                    StaticTotpSecretRepo,
-                )))],
+                vec![Box::new(AuthenticatorFactor::new(Arc::clone(&totp_repo)))],
                 MfaHandler,
             ))
             .build()

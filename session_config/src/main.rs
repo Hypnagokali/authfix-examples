@@ -7,7 +7,7 @@ use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get, middlewar
 use authfix::{
     AuthToken,
     login::{LoadUserByCredentials, LoadUserError, LoginToken},
-    session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
+    session::{AccountInfo, app_builder::SessionLoginAppBuilder},
 };
 use serde::{Deserialize, Serialize};
 

@@ -57,11 +57,11 @@ impl CodeSender for DummySender {
 }
 
 // Responsible for deciding whether the user needs a second factor and, if so, which one.
-struct RandomCodeProvider;
+struct AlwaysAskForRandomCode;
 
-// Always use MfaRandomCode for every login attempt.
+// This implementation uses MfaRandomCodeFactor for all login attempts.
 #[async_trait(?Send)]
-impl HandleMfaRequest for RandomCodeProvider {
+impl HandleMfaRequest for AlwaysAskForRandomCode {
     type User = User;
 
     async fn mfa_id_by_user(&self, _: &Self::User) -> Result<Option<String>, MfaError> {
@@ -69,7 +69,7 @@ impl HandleMfaRequest for RandomCodeProvider {
     }
 }
 
-// Provide the login form. The path must be the same as the one in Routes (Routes::get_login).
+// Provides the login form. The path must be the same as the one in Routes (Routes::login).
 #[get("/login")]
 async fn login(query: Query<LoginError>) -> impl Responder {
     html! {
@@ -97,7 +97,7 @@ async fn login(query: Query<LoginError>) -> impl Responder {
     }
 }
 
-// Provide MFA form.
+// Provides MFA form.
 #[get("/login/mfa")]
 async fn login_mfa(query: Query<LoginError>) -> impl Responder {
     html! {
@@ -122,7 +122,7 @@ async fn login_mfa(query: Query<LoginError>) -> impl Responder {
     }
 }
 
-// Provide a logout page.
+// A logout page.
 #[get("/logout")]
 async fn logout() -> impl Responder {
     html! {
@@ -155,7 +155,7 @@ async fn secured(token: AuthToken<User>) -> impl Responder {
     }
 }
 
-// An index page. Is not really needed.
+// An index page, just for the sake of completeness.
 #[get("/")]
 async fn index() -> impl Responder {
     html! {
@@ -173,11 +173,16 @@ async fn index() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let key = Key::generate();
+
+    // The code sender could be a shared service (MailSender, SmsSender), so we have to wrap in an Arc.
     let code_sender = Arc::new(DummySender);
 
     HttpServer::new(move || {
+        // Create the factor:
         let code_factor = Box::new(MfaRandomCodeFactor::new(
             || {
+                // Provide a function that generates a random code.
+                // This one will always generate 123 and is valid for 5 minutes.
                 RandomCode::new(
                     "123",
                     SystemTime::now()
@@ -187,13 +192,18 @@ async fn main() -> std::io::Result<()> {
             },
             Arc::clone(&code_sender),
         ));
-        let mfa_config = MfaConfig::new(vec![code_factor], RandomCodeProvider);
 
+        // Then build the MfaConfig with the Factor and the MfaHandler
+        let mfa_config = MfaConfig::new(vec![code_factor], AlwaysAskForRandomCode);
+
+        // The default redirect is used after a successful login or if a user tries accessing a login route while alredy logged in.
+        // The default value is "/".
         let routes = Routes::default().set_default_redirect("/secured");
 
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
             .set_mfa(mfa_config)
             .set_login_routes_and_public_paths(routes, vec!["/"])
+            // Activate the redirect flow:
             .with_redirect_flow()
             .build()
             .service(index)
