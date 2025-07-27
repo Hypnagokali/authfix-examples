@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get};
 use authfix::{
-    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::{
+    AuthToken, async_trait,
+    login::{LoadUserByCredentials, LoadUserError, LoginToken},
+    multifactor::{
         config::{HandleMfaRequest, MfaConfig, MfaError},
         factor_impl::authenticator::{
-            AuthenticatorFactor, GetTotpSecretError, TotpSecretRepository
+            AuthenticatorFactor, GetTotpSecretError, TotpSecretRepository,
         },
-    }, session::{app_builder::SessionLoginAppBuilder, config::Routes, AccountInfo}, AuthToken
+    },
+    session::{AccountInfo, app_builder::SessionLoginAppBuilder, config::Routes},
 };
 use google_authenticator::GoogleAuthenticator;
 use serde::{Deserialize, Serialize};
@@ -49,8 +52,8 @@ impl HandleMfaRequest for MfaHandler {
     }
 
     // There are two more methods that could be implemented:
-    
-    // Checks if this login request should trigger a mfa challenge. 
+
+    // Checks if this login request should trigger a mfa challenge.
     // async fn is_condition_met(&self, user: &Self::User, req: HttpRequest) -> bool {
     //     true
     // }
@@ -107,7 +110,7 @@ async fn code() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let key = Key::generate();
-    
+
     // Create an instance of a TotpSecretRepository.
     let totp_repo = Arc::new(StaticTotpSecretRepo);
     HttpServer::new(move || {

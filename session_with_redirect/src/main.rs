@@ -5,9 +5,18 @@ use std::{
 
 use actix_web::{HttpServer, Responder, cookie::Key, get, web::Query};
 use authfix::{
-    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::{config::{HandleMfaRequest, MfaConfig, MfaError}, factor_impl::random_code_auth::{CodeSendError, CodeSender, MfaRandomCodeFactor, RandomCode}}, session::{
-        app_builder::SessionLoginAppBuilder, config::Routes, handlers::LoginError, AccountInfo
-    }, AuthToken
+    AuthToken, async_trait,
+    login::{LoadUserByCredentials, LoadUserError, LoginToken},
+    multifactor::config::{HandleMfaRequest, MfaConfig, MfaError},
+    session::{
+        AccountInfo,
+        app_builder::SessionLoginAppBuilder,
+        auth_flow::LoginError,
+        config::Routes,
+        factor_impl::random_code_auth::{
+            CodeSendError, CodeSender, MfaRandomCodeFactor, RandomCode,
+        },
+    },
 };
 use chrono::{DateTime, Local};
 use maud::html;
@@ -44,11 +53,13 @@ struct DummySender;
 
 // To do so, it has to implement the CodeSender trait.
 impl CodeSender for DummySender {
-    async fn send_code(&self, random_code: RandomCode) -> Result<(), CodeSendError> {
+    type User = User;
+    async fn send_code(&self, user: &User, random_code: RandomCode) -> Result<(), CodeSendError> {
         // send the code to the user
         let until = DateTime::<Local>::from(*random_code.valid_until());
         println!(
-            "your code '{}' is valid until {}",
+            "Send code to: {}\nyour code '{}' is valid until {}",
+            user.name,
             random_code.value(),
             until.format("%H:%M")
         );
@@ -70,6 +81,7 @@ impl HandleMfaRequest for AlwaysAskForRandomCode {
 }
 
 // Provides the login form. The path must be the same as the one in Routes (Routes::login).
+// Notice: I used the maud crate as template engine here.
 #[get("/login")]
 async fn login(query: Query<LoginError>) -> impl Responder {
     html! {
