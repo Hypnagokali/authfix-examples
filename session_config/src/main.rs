@@ -1,13 +1,16 @@
-use actix_session::{
-    SessionMiddleware,
-    config::{PersistentSession, SessionLifecycle},
-    storage::CookieSessionStore,
-};
 use actix_web::{HttpResponse, HttpServer, Responder, cookie::Key, get, middleware::Logger};
 use authfix::{
     AuthToken,
     login::{LoadUserByCredentials, LoadUserError, LoginToken},
-    session::{AccountInfo, app_builder::SessionLoginAppBuilder},
+    session::{
+        AccountInfo,
+        actix_session::{
+            SessionMiddleware,
+            config::{PersistentSession, SessionLifecycle},
+            storage::CookieSessionStore,
+        },
+        app_builder::SessionLoginAppBuilder,
+    },
 };
 use serde::{Deserialize, Serialize};
 

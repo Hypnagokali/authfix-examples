@@ -5,9 +5,18 @@ use std::{
 
 use actix_web::{HttpServer, Responder, cookie::Key, get, web::Query};
 use authfix::{
-    async_trait, login::{LoadUserByCredentials, LoadUserError, LoginToken}, multifactor::config::{HandleMfaRequest, MfaConfig, MfaError}, session::{
-        app_builder::SessionLoginAppBuilder, auth_flow::LoginError, config::Routes, factor_impl::random_code_auth::{CodeSendError, CodeSender, MfaRandomCodeFactor, RandomCode}, AccountInfo
-    }, AuthToken
+    AuthToken, async_trait,
+    login::{LoadUserByCredentials, LoadUserError, LoginToken},
+    multifactor::config::{HandleMfaRequest, MfaConfig, MfaError},
+    session::{
+        AccountInfo,
+        app_builder::SessionLoginAppBuilder,
+        auth_flow::LoginError,
+        config::Routes,
+        factor_impl::random_code_auth::{
+            CodeSendError, CodeSender, MfaRandomCodeFactor, RandomCode,
+        },
+    },
 };
 use chrono::{DateTime, Local};
 use maud::html;
