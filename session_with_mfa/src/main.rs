@@ -15,6 +15,10 @@ use authfix::{
 use google_authenticator::GoogleAuthenticator;
 use serde::{Deserialize, Serialize};
 
+use crate::register_secret::{check_code, show_qr_code};
+
+mod register_secret;
+
 const SECRET: &str = "I3VFM3JKMNDJCDH5BMBEEQAW6KJ6NOE3";
 
 // A user intended for session authentication must derive or implement Serialize, and Deserialize.
@@ -115,7 +119,7 @@ async fn main() -> std::io::Result<()> {
     let totp_repo = Arc::new(StaticTotpSecretRepo);
     HttpServer::new(move || {
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
-            .set_login_routes_and_public_paths(Routes::default(), vec!["/code"])
+            .set_login_routes_and_public_paths(Routes::default(), vec!["/code", "/qr-code/*"])
             // create the AuthenticatorFactor configuration
             .set_mfa(MfaConfig::new(
                 vec![Box::new(AuthenticatorFactor::new(Arc::clone(&totp_repo)))],
@@ -124,6 +128,9 @@ async fn main() -> std::io::Result<()> {
             .build()
             .service(secured)
             .service(code)
+            // handlers for registering authenticator example
+            .service(show_qr_code)
+            .service(check_code)
     })
     .bind("127.0.0.1:7080")?
     .run()
