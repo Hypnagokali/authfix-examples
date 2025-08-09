@@ -119,6 +119,7 @@ async fn main() -> std::io::Result<()> {
     let totp_repo = Arc::new(StaticTotpSecretRepo);
     HttpServer::new(move || {
         SessionLoginAppBuilder::create(AuthenticationService, key.clone())
+            // usually the QR code routes would be authenticated ones to associate the request with a user. For this example they are public.
             .set_login_routes_and_public_paths(Routes::default(), vec!["/code", "/qr-code/*"])
             // create the AuthenticatorFactor configuration
             .set_mfa(MfaConfig::new(
@@ -128,7 +129,7 @@ async fn main() -> std::io::Result<()> {
             .build()
             .service(secured)
             .service(code)
-            // handlers for registering authenticator example
+            // handlers for registering an authenticator using a QR code
             .service(show_qr_code)
             .service(check_code)
     })
