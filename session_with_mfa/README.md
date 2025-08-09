@@ -1,6 +1,6 @@
 # Authfix example: session with mfa (Authenticator)
 
-## Example
+## Example 1: Login with an authenticator
 
 Lets log in like before:
 ```sh
@@ -16,7 +16,7 @@ The response indicates, that you need a second factor to login and what type of 
 {"status":"MfaNeeded","mfaId":"TOTP_MFA"}
 ```
 
-We get the code via a helper route `/code` and send it then to the mfa-endpoint:
+You get the code via a helper route `/code` and send it then to the mfa-endpoint:
 
 ```sh
 curl -c cookies.txt -b cookies.txt -X POST -i http://localhost:7080/login/mfa \
@@ -25,8 +25,13 @@ curl -c cookies.txt -b cookies.txt -X POST -i http://localhost:7080/login/mfa \
     -i
 ```
 
-We are now logged in
+You are now logged in
 ```sh
 curl -b cookies.txt http://localhost:7080/secured -i
 ```
+
+## Example 2: Register an authenticator
+
+Start the application and go to http://localhost:7080/qr-code
+You can register the secret and verify it.
 
